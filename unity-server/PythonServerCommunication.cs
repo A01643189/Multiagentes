@@ -5,9 +5,18 @@ using System.Collections;
 public class RealTimeImageSender : MonoBehaviour
 {
     public Camera gameCamera;
-    public int frameSkip = 5; // Send every 5th frame
-
+    public int frameSkip = 10; // Increase the skip to reduce load
     private int frameCounter = 0;
+
+    private RenderTexture renderTexture;
+    private Texture2D screenShot;
+
+    void Start()
+    {
+        // Initialize and reuse the RenderTexture and Texture2D objects
+        renderTexture = new RenderTexture(Screen.width, Screen.height, 24);
+        screenShot = new Texture2D(Screen.width, Screen.height, TextureFormat.RGB24, false);
+    }
 
     void Update()
     {
@@ -22,9 +31,7 @@ public class RealTimeImageSender : MonoBehaviour
     IEnumerator SendFrameToServer()
     {
         // Capture the current frame from the camera
-        RenderTexture renderTexture = new RenderTexture(Screen.width, Screen.height, 24);
         gameCamera.targetTexture = renderTexture;
-        Texture2D screenShot = new Texture2D(Screen.width, Screen.height, TextureFormat.RGB24, false);
         gameCamera.Render();
 
         RenderTexture.active = renderTexture;
@@ -43,6 +50,7 @@ public class RealTimeImageSender : MonoBehaviour
         // Send the request to the FastAPI server
         using (UnityWebRequest www = UnityWebRequest.Post("http://127.0.0.1:8000/upload/", form))
         {
+            www.timeout = 60; // Adjust the timeout if needed
             yield return www.SendWebRequest();
 
             if (www.result != UnityWebRequest.Result.Success)
@@ -57,7 +65,21 @@ public class RealTimeImageSender : MonoBehaviour
                 responseTexture.LoadImage(responseData);
 
                 // Apply the processed image to a material or UI element
+                // Example: Apply to a RawImage UI element or a MeshRenderer material
             }
+        }
+    }
+
+    void OnDestroy()
+    {
+        // Cleanup
+        if (renderTexture != null)
+        {
+            renderTexture.Release();
+        }
+        if (screenShot != null)
+        {
+            Destroy(screenShot);
         }
     }
 }

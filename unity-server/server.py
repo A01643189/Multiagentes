@@ -26,6 +26,9 @@ async def upload_image(file: UploadFile = File(...)):
         nparr = np.frombuffer(contents, np.uint8)
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
+        if img is None:
+            raise HTTPException(status_code=400, detail="Invalid image data")
+
         # Process the image using YOLOv8
         results = model.track(img, persist=True)
         annotated_frame = results[0].plot()
@@ -39,13 +42,14 @@ async def upload_image(file: UploadFile = File(...)):
 
     except Exception as e:
         logger.error(f"Error processing image: {str(e)}")
-        raise HTTPException(status_code=500, detail="Error processing image")
+        raise HTTPException(status_code=500, detail=f"Error processing image: {str(e)}")
+
 
 @app.get("/")
 def root():
     return {"message": "FastAPI server is running"}
 
 # Run the FastAPI application
-if _name_ == "_main_":
+if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    uvicorn.run(app, host="127.0.0.1", port=8000)
