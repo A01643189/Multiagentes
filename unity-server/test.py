@@ -9,10 +9,10 @@ import json  # Import JSON module
 onto = get_ontology("file://ontologia.owl")
 
 with onto:
-    class Robot(Thing):
+    class Drone(Thing):
         pass
 
-    class RobotList(Thing):
+    class DroneList(Thing):
         pass
 
     class Box(Thing):
@@ -25,15 +25,15 @@ with onto:
         pass
     
     class has_place(ObjectProperty, FunctionalProperty):
-        domain = [Robot,Box]
+        domain = [Drone, Box]
         range = [Place]
 
     class has_obstacle(ObjectProperty):
-        domain = [Robot]
+        domain = [Drone]
         range = [Obstacle]
 
     class has_box(ObjectProperty):
-        domain = [Robot]
+        domain = [Drone]
         range = [Box]
 
     class Hole(Thing):
@@ -44,11 +44,11 @@ with onto:
 
     # Add a data property to track the robot's position in JSON format
     class position_x(DataProperty, FunctionalProperty):
-        domain = [Robot]
+        domain = [Drone]
         range = [int]
 
     class position_y(DataProperty, FunctionalProperty):
-        domain = [Robot]
+        domain = [Drone]
         range = [int]
 
 class Node():
@@ -117,17 +117,57 @@ def a_star(start, goal, grid):
 
     return None  # No path found
 
-class VacuumAgent(ap.Agent):
+class DroneAgent(ap.Agent):
     
     def see(self, e):
         self.per = []
-        vecinos = e.neighbors(self)
-        box_perception = {
-            'agent': Robot,
-            'perception': Box(has_place = Place(has_position = str(e.positions[vecino]))),
-        }
-        for vecino in vecinos:
-            self.per.append(box_perception)
+        neighbors = e.neighbors(self)
+        
+        for neighbor in neighbors:
+            neighbor_pos = e.positions[neighbor]
+            if isinstance(neighbor, BoxAgent):
+                perception = {
+                    'agent': self.owl_instance,  # The drone agent itself
+                    'perception': Box(has_place=Place(has_position=str(neighbor_pos))),
+                }
+            elif isinstance(neighbor, HoleAgent):
+                is_full = self.is_hole_full(neighbor)
+                perception = {
+                    'agent': self.owl_instance,
+                    'perception': Hole(has_place=Place(has_position=str(neighbor_pos)), is_full=is_full),
+                }
+            elif isinstance(neighbor, ObstacleAgent):
+                perception = {
+                    'agent': self.owl_instance,
+                    'perception': Obstacle(has_place=Place(has_position=str(neighbor_pos))),
+                }
+            else:
+                continue
+            
+            # Append the perception to the drone's perception list
+            self.per.append(perception)
+        
+    
+    def drop_off_box(self, hole):
+        self.carrying_box = False
+        hole.dropped = True
+        hole.box_count += 1  # Increment box count
+
+        # Check if the hole is now full
+        if hole.box_count >= hole.owl_instance.hole_capacity[0]:
+            hole.owl_instance.is_full = True  # Mark the hole as full in the ontology
+            print(f"Hole {hole.name} is full.")
+
+        if self.owl_instance.has_box:
+            box_to_remove = self.owl_instance.has_box[0]  # Get the first box (if any)
+            self.owl_instance.has_box.remove(box_to_remove)  # Remove the box
+
+        self.path = []
+
+    def is_hole_full(self, hole):
+        """ Check if a hole is full """
+        return hole.box_count >= hole.owl_instance.hole_capacity[0]
+        
     
     def setup(self):
         self.agentType = 1
@@ -135,7 +175,7 @@ class VacuumAgent(ap.Agent):
         self.path = []
 
         # Assign a unique name to the agent
-        self.name = f"Vacuum_{self.id}"
+        self.name = f"Drone_{self.id}"
 
         # Associate this agent with the Robot class in the ontology
         self.owl_instance = onto.Robot(self.name)
@@ -240,15 +280,16 @@ class HoleAgent(ap.Agent):
     def setup(self):
         self.agentType = 2
         self.dropped = False
+        self.box_count = 0  # Track how many boxes are in the hole
 
-        # Asignar un nombre único al agente
+        # Assign a unique name to the agent
         self.name = f"Hole_{self.id}"
 
-        # Asociar con la ontología
+        # Associate with the ontology
         self.owl_instance = onto.Hole(self.name)
 
-        # Asignar la capacidad inicial usando una lista
-        self.owl_instance.hole_capacity = [5]  # Nota: se asigna como lista
+        # Set initial capacity
+        self.owl_instance.hole_capacity = [5]  # Note: assigned as a list
 
 class ObstacleAgent(ap.Agent):
     def setup(self):
@@ -257,103 +298,48 @@ class ObstacleAgent(ap.Agent):
         # Asociar con la ontología
         self.owl_instance = onto.Obstacle(self.name)
 
-class VacuumModel(ap.Model):
+class DroneModel(ap.Model):
     def setup(self):
         self.grid = ap.Grid(self, (self.p.M, self.p.N), track_empty=True)
-        self.agents = ap.AgentList(self, self.p.vacuums, VacuumAgent)
-        self.boxList = ap.AgentList(self, self.p.boxes, BoxAgent)
+        self.agents = ap.AgentList(self, self.p.agents, DroneAgent)
         self.holeList = ap.AgentList(self, self.p.holes, HoleAgent)
-        self.obstacleList = ap.AgentList(self, self.p.obstacles, ObstacleAgent)
-
-        # Define fixed positions for obstacles
-        obstacle_positions = [
-            (6, 4), (5, 4), (4, 4),
-            (3, 4), (2, 4), (1, 4),
-            (0, 4), (9, 8), (8, 8),
-            (7, 8), (6, 8), (5, 8),
-            (4, 8), (3, 8)
-        ]
-
-        hole_positions = [
-            (9, 2), (0, 6), (9, 6),
-            (0, 9), (9, 9)
-        ]
-
-        # Combine obstacle and hole positions into a set of invalid positions
-        invalid_positions = set(obstacle_positions + hole_positions)
-
-        # Add obstacles and holes to the grid
-        self.grid.add_agents(self.holeList, positions=hole_positions)
-        self.grid.add_agents(self.obstacleList, positions=obstacle_positions)
-
-        # Get all valid positions on the grid that are not occupied by obstacles or holes
-        all_positions = [(x, y) for x in range(self.p.M) for y in range(self.p.N)]
-        valid_positions = [pos for pos in all_positions if pos not in invalid_positions]
-
-        # Ensure that we have enough positions for agents and boxes
-        assert len(valid_positions) >= len(self.agents) + len(self.boxList), "Not enough valid positions for agents and boxes."
-
-        # Sample positions for agents and boxes
-        agent_positions = self.random.sample(valid_positions, len(self.agents))
-        remaining_positions = [pos for pos in valid_positions if pos not in agent_positions]
-        box_positions = self.random.sample(remaining_positions, len(self.boxList))
-
-        # Add agents and boxes to the grid at sampled positions
-        self.grid.add_agents(self.agents, positions=agent_positions)
-        self.grid.add_agents(self.boxList, positions=box_positions)
-
-        # Create a numpy array to represent the grid for A* pathfinding
-        self.grid_array = np.zeros((self.p.M, self.p.N))
-
-        # Place obstacles on the grid array based on fixed positions
-        for pos in obstacle_positions:
-            self.grid_array[pos[0], pos[1]] = 1  # Mark obstacle positions as 1
+        self.boxList = ap.AgentList(self, self.p.boxes, BoxAgent)
+        self.obstaclesList = ap.AgentList(self, self.p.obstacles, ObstacleAgent)
+        
+        # Place agents randomly
+        self.grid.add_agents(self.agents, random=True, empty=True)
+        self.grid.add_agents(self.holeList, random=True, empty=True)
+        self.grid.add_agents(self.boxList, random=True, empty=True)
+        self.grid.add_agents(self.obstaclesList, random=True, empty=True)
+        
+        # Initialize grid array for A* algorithm
+        self.grid_array = np.zeros((self.p.M, self.p.N), dtype=int)
+        for obstacle in self.obstaclesList:
+            pos = self.grid.positions[obstacle]
+            self.grid_array[pos[0], pos[1]] = 1  # Mark obstacle positions as occupied
 
     def step(self):
         self.agents.step()
 
-    def update(self):
-        pass
-
-    def end(self):
-        pass
-
+# Simulation parameters
 parameters = {
-    'vacuums': 5,
-    'boxes': 10,
-    'holes': 5,
-    'obstacles': 14,
     'M': 10,
     'N': 10,
-    'steps': 100,
-    'seed': 12345,
+    'agents': 1,
+    'boxes': 2,
+    'holes': 1,
+    'obstacles': 2,
+    'steps': 20
 }
 
-model = VacuumModel(parameters)
-model.run()
+# Run the simulation
+model = DroneModel(parameters)
+results = model.run()
 
-def animation_plot(model, ax):
-    agent_type_grid = model.grid.attr_grid('agentType')
-    ap.gridplot(agent_type_grid, cmap='Accent', ax=ax)
-    ax.set_title(f"Vacuum Model \n Time-step: {model.t}, "
-                 f"Boxes left: {sum(1 for box in model.boxList if not box.picked_up)}, ")
-
-# SIMULATION:
-fig, ax = plt.subplots()
-model = VacuumModel(parameters)
-animation = ap.animate(model, fig, ax, animation_plot)
-IPython.display.HTML(animation.to_jshtml())
-
-def test():
-    print("Test")
-    parameters={ 'vacuums': 5,
-    'boxes': 10,
-    'holes': 5,
-    'obstacles': 14,
-    'M': 10,
-    'N': 10,
-    'steps': 100,
-    'seed': 12345,}
-    model = VacuumModel(parameters)
-    model.setup()
-    model.step()
+# Visualize the final positions of the agents
+plt.figure(figsize=(8, 8))
+plt.imshow(model.grid_array, cmap='Greys', origin='upper', extent=[0, parameters['M'], 0, parameters['N']])
+agent_positions = np.array(list(model.grid.positions.values()))
+plt.scatter(agent_positions[:, 1], parameters['M'] - agent_positions[:, 0], c='blue', label='Drone Agents')
+plt.legend()
+plt.show()
