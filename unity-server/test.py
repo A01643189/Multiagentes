@@ -141,6 +141,11 @@ class DroneAgent(ap.Agent):
                     'agent': self.owl_instance,
                     'perception': Obstacle(has_place=Place(has_position=str(neighbor_pos))),
                 }
+            elif isinstance(neighbor, DroneAgent):
+                perception = {
+                    'agent': self.owl_instance,
+                    'perception': Drone(has_place=Place(has_position=str(neighbor_pos))),
+                }
             else:
                 continue
             

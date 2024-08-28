@@ -16,7 +16,7 @@ public class CameraStreamer : MonoBehaviour
     public string serverIP = "127.0.0.1";
 
     [Header("Configuraciones")] [Tooltip("Puerto del servidor de python")]
-    public int serverPort = 5000;
+    public int serverPort = 8000;
 
     // textura donde se va a renderizar la camara
     private RenderTexture renderTexture;
@@ -93,6 +93,6 @@ public class CameraStreamer : MonoBehaviour
         if (client != null && client.Connected)
         {
             client.Close();
-        }
-    }
+        }
+    }
 }
