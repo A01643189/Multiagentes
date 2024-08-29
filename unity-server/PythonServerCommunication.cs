@@ -11,6 +11,21 @@ public class RealTimeImageSender : MonoBehaviour
     private RenderTexture renderTexture;
     private Texture2D screenShot;
 
+    [System.Serializable]
+    public class Robot { public int[] position; }
+    [System.Serializable]
+    public class Containes { public int[] position; }
+    [System.Serializable]
+    public class Box { public int[] position; }
+    [System.Serializable]
+    public class RobotContainer
+    {
+        public List<Robot> robots;
+        public List<Container> containers;
+        public List<Box> boxes;
+    }
+
+
     void Start()
     {
         // Initialize and reuse the RenderTexture and Texture2D objects
@@ -42,10 +57,21 @@ public class RealTimeImageSender : MonoBehaviour
         RenderTexture.active = null; // Clean up
 
         byte[] imageBytes = screenShot.EncodeToJPG();
+         // Capture the current frame from the camera (existing code)...
 
-        // Create the form and add the image data
+        // Serialize robots, containers, and boxes into JSON
+        RobotContainer robotContainer = new RobotContainer
+        {
+            robots = new List<Robot>() { /* Initialize with current positions */ },
+            containers = new List<Container>() { /* Initialize with current positions */ },
+            boxes = new List<Box>() { /* Initialize with current positions */ }
+        };
+        string jsonData = JsonUtility.ToJson(robotContainer);
+
+        // Create the form and add image data and JSON
         WWWForm form = new WWWForm();
         form.AddBinaryData("file", imageBytes, "frame.jpg", "image/jpeg");
+        form.AddField("jsonData", jsonData);
 
         // Send the request to the FastAPI server
         using (UnityWebRequest www = UnityWebRequest.Post("http://127.0.0.1:8000/upload/", form))

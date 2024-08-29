@@ -1,6 +1,8 @@
 from ultralytics import YOLO
 import logging
 import cv2
+from pydantic import BaseModel
+from typing import List
 import numpy as np
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.responses import StreamingResponse
@@ -11,13 +13,31 @@ app = FastAPI()
 
 # Initialize the YOLO model
 model = YOLO('yolov8s.pt')
+class Position(BaseModel):
+    y: int
+    x: int
+
+class Robot(BaseModel):
+    position: Position
+
+class Container(BaseModel):
+    position: Position
+
+class Box(BaseModel):
+    position: Position
+class RobotContainer(BaseModel):
+    robots: List[Robot]
+    containers: List[Container]  # Define similarly
+    boxes: List[Box]  # Define similarly
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("upload_image")
 
 @app.post("/upload/")
-async def upload_image(file: UploadFile = File(...)):
+async def upload_image(jsonData: str, file: UploadFile = File(...)):
+    robot_data = RobotContainer.parse_raw(jsonData)
+
     try:
         contents = await file.read()
         logger.info(f"Received file: {file.filename}")
@@ -38,7 +58,7 @@ async def upload_image(file: UploadFile = File(...)):
         img_bytes = img_encoded.tobytes()
 
         # Return the processed image as a response
-        return StreamingResponse(io.BytesIO(img_bytes), media_type="image/jpeg")
+        return {"robots": updated_robots, "containers": updated_containers, "boxes": updated_boxes}
 
     except Exception as e:
         logger.error(f"Error processing image: {str(e)}")
