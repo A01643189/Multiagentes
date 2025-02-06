@@ -1,73 +1,101 @@
-# TC2008B: Modelación de Sistemas Multiagentes con Gráficas Computacionales
+# **TC2008B: Multi-Agent System Modeling with Computer Graphics**
 
-## Actividad Integradora
+## **Integrative Activity**
 
-### Parte 1: Sistemas Multiagentes
+### **Part 1: Multi-Agent Systems**
 
-#### Descripción del Problema
-¡Felicidades! Eres el orgulloso propietario de 5 robots nuevos y un almacén lleno de objetos. El dueño anterior del almacén lo dejó en completo desorden, por lo que depende de tus robots organizar los objetos en algo parecido al orden y convertirlo en un negocio exitoso.
+#### **Problem Description**
+Congratulations! You are now the proud owner of five new robots and a warehouse full of scattered objects. The previous owner left the warehouse in complete disarray, and it is up to your robots to organize the objects efficiently and turn the warehouse into a successful business.
 
-Cada robot está equipado con un sistema de tracción potente y puede avanzar sobre cualquier terreno y girar en cualquier dirección. Pueden recoger objetos en celdas de cuadrícula frente a ellos con sus manipuladores, llevarlos a otra ubicación e incluso construir pilas de hasta cinco objetos. Todos los robots están equipados con la tecnología de sensores más nueva, lo que les permite recibir datos de sensores de las cuatro celdas adyacentes. Pueden distinguir si un campo está libre, es una pared, contiene una pila de objetos (y cuántos objetos hay en la pila) o está ocupado por otro robot. Los robots también tienen sensores de presión que les indican si llevan un objeto en ese momento. Además, tienen la capacidad de llevar un mapa consigo.
+Each robot is equipped with **powerful traction systems**, allowing them to move across any terrain and rotate in any direction. They can **pick up objects** from grid cells in front of them using their manipulators, transport them, and **stack them into piles of up to five objects**.
 
-Tu tarea es enseñar a los robots cómo ordenar su almacén. La organización de los agentes depende de ti, siempre que todos los objetos terminen en pilas ordenadas de cinco.
+The robots feature **advanced sensors** that provide real-time data on the **four adjacent cells**, helping them determine if a cell is:
+- Empty
+- A wall
+- Occupied by a stack of objects (with stack height information)
+- Occupied by another robot
 
-#### Simulación
-- **Inicialización**: Las posiciones iniciales de los K objetos deben ser aleatorias, y todos los objetos estarán a nivel de piso.
-- **Posición de los Agentes**: Todos los robots empiezan en posiciones aleatorias vacías.
-- **Ejecución**: Se ejecuta durante el tiempo máximo establecido o hasta alcanzar el número máximo de pasos.
+Additionally, robots have **pressure sensors** to detect whether they are currently carrying an object. They also possess **mapping capabilities** to navigate the warehouse efficiently.
 
-#### Recolección de Información
-Durante la ejecución, deberás recopilar la siguiente información:
-- Tiempo necesario hasta que todos los objetos estén en pilas de máximo 5 objetos.
-- Número de movimientos realizados por cada robot.
-- Estrategias para disminuir el tiempo y la cantidad de movimientos.
+Your task is to **teach the robots how to organize the warehouse**, ensuring all objects are properly stacked into ordered piles of five.
 
-#### Consideraciones
-- Los robots pueden operar con razonamiento deductivo, práctico, o una combinación de ambos.
-- Implementa un sistema básico de detección de colisiones (por ejemplo, detenerse antes de una colisión y asignar el paso a uno de los robots).
-- Los robots solo pueden avanzar hacia adelante, pero pueden girar en todas las direcciones sobre su propio eje.
-- Diseña, implementa y usa una ontología en cada agente.
+#### **Simulation**
+- **Initialization**: Objects (K) are placed randomly on the floor.
+- **Agent Positioning**: Robots start at random empty positions.
+- **Execution**: The simulation runs until the maximum allowed time or step limit is reached.
 
-### Parte 2: Gráficas Computacionales
+#### **Data Collection**
+During execution, the system gathers the following data:
+- Time required to organize all objects into stacks of five.
+- Number of moves performed by each robot.
+- Strategies to reduce execution time and optimize movements.
 
-#### Descripción del Problema
-Aplica la misma descripción de la Parte 1.
+#### **Key Considerations**
+- Robots can use **deductive reasoning, practical reasoning, or a hybrid approach**.
+- Implement a **basic collision detection system** to prevent crashes (e.g., stopping before a collision and assigning priority to a robot).
+- Robots **can only move forward** but can rotate in place to change direction.
+- **Ontology-based agent design** is required.
 
-#### Requerimientos
-- **Modelado 3D**:
-  - Estante, objetos varios, robots (al menos 5), almacén (piso, paredes y puerta) usando modelos con materiales (colores) y texturas (usando mapeo UV).
-- **Animación**:
-  - Los robots deben desplazarse por el piso del almacén, en los pasillos formados por los estantes.
-- **Iluminación**:
-  - Al menos una fuente de luz direccional.
-  - Al menos una fuente de luz puntual sobre cada robot (tipo sirena), la cual se moverá con cada robot.
-- **Detección de Colisiones**:
-  - Los robots se moverán en rutas predeterminadas con velocidad aleatoria y detectarán colisiones entre ellos.
+---
 
-### Parte 3: Visión Computacional
+### **Part 2: Computer Graphics**
 
-#### Descripción del Problema
-Aplica la misma descripción de la Parte 1.
+#### **Problem Description**
+This part follows the same warehouse organization concept as **Part 1**, but with a **3D simulation using Unity**.
 
-#### Requerimientos
-- **Identificación de Objetos**:
-  - Asume que el robot tiene una cámara que puede estar orientada hacia el frente o según convenga.
-  - La cámara debe hacer un stream hacia el modelo de visión (SAM, YOLO, OpenAI, etc.).
-  - Cuando el robot percibe un objeto, debe dar una señal de lo que está observando (e.g., un globo de diálogo que diga: "¡Es una manzana!").
+#### **Requirements**
+- **3D Modeling**:
+  - Warehouse structure, shelves, objects, and at least five robots.
+  - Models should include **materials (colors) and UV-mapped textures**.
 
-### Especificaciones de Entrega
+- **Animation**:
+  - Robots move through warehouse aisles, picking up and stacking objects.
 
-El enlace a un repositorio personal de GitHub debe contener:
-- **Parte 1**:
-  - Un documento PDF con especificaciones de propiedades de agentes y ambiente, una métrica de utilidad o éxito de cada agente, diagramas de clase de los agentes y ontologías utilizadas, y una conclusión con alternativas de mejora.
-  - Código implementado para la simulación.
-- **Parte 2**:
-  - Un archivo `.unitypackage` con todo lo necesario para ejecutar la solución.
+- **Lighting**:
+  - **At least one directional light source** (e.g., warehouse overhead lights).
+  - **Each robot must have a moving point light** (e.g., siren-style indicator).
 
-### Notas
+- **Collision Detection**:
+  - Robots move along predefined paths at random speeds and detect collisions dynamically.
 
-Considera que:
-- El almacén tiene MxN espacios.
-- Hay K objetos iniciales en posiciones aleatorias.
-- Al menos 5 robots.
-- Tiempo máximo de ejecución (en segundos o pasos).
+---
+
+### **Part 3: Computer Vision**
+
+#### **Problem Description**
+This part follows the same warehouse organization concept as **Part 1**, incorporating **real-time object detection using YOLOv8**.
+
+#### **Requirements**
+- **Object Identification**:
+  - Each robot is equipped with a **camera**, which can be positioned forward-facing or dynamically adjusted.
+  - The camera **streams data to a YOLOv8-based vision model** to classify detected objects.
+  - When an object is identified, the system **displays a dialogue bubble above the robot** (e.g., "This is an apple!").
+
+---
+
+## **Project Setup & Execution**
+
+To **run the project**, follow these steps:
+
+### **1. Install Dependencies**
+Ensure you have **Node.js** installed, then run:
+```bash
+npm install
+```
+
+### **2. Start the Server**
+Once dependencies are installed, start the backend server using:
+```bash
+npm start
+```
+
+### **3. Open the Unity Simulation**
+To run the **3D warehouse simulation**, follow these steps:
+
+1. Open **Unity Hub** and navigate to the project directory.
+2. Open the Unity project and ensure all assets and dependencies are properly imported.
+3. Click on **Play** in the Unity Editor to start the simulation.
+4. Ensure the **Node.js server remains running** in the terminal to allow real-time agent interaction.
+
+Once the simulation starts, the robots will autonomously navigate, detect objects, and stack them while interacting with the environment.
+
